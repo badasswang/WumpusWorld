@@ -1,0 +1,122 @@
+import updatewumpus
+import FOPC
+
+'''
+while agent is alive:
+	while gold is none:
+		get current percepts
+		bind current percepts for current cell
+		check current percepts for anomaly:
+			gold
+				if gold: pick up gold and set gold to true
+			wumpus nearby?
+			pit nearby?
+			if both wumpus and pit nearby:
+				there is only one safe cell near us besides the one we came from
+		get list of nearby cells
+		if wumpus nearby:
+			flag nearby cells as dangerous
+		if pit nearby:
+			flag nearby cells as maybe_pit
+		for each nearby cell in nearby cells that is not somewhere we went:
+			check if there is a safe cell
+				go to safe cell
+			else:
+				if a cell is both dangerous and maybe_pit:
+					we check if we got nasty smell already in its nearby cells >= 2
+					if not:
+						it may not be wumpus
+					we check if we got breeze already in its nearbby cells >= 2
+					if not:
+						it may not be pit
+					if neither wumpus nor pit, we can go there
+						go to maybe safe cell
+				no safe cell?
+					we're stuck
+	while gold is picked up:
+		get list of safe cells
+		connect cells
+		exit
+'''
+
+this_world = updatewumpus.intialize_world()
+agent = 1
+gold = 0
+
+def flag(a_cell):
+	wumpus_nearby = 1 if a_cell[0] == 'nasty' else 0
+	pit_nearby = 1 if a_cell[1] == 'breeze' else 0
+	return [wumpus_nearby,pit_nearby]
+
+# def low2hi_risk(wumpus_list, pit_list):
+# 	return low2hi_risk[0]
+
+def cell2cell(_from, _to):
+	if int(_from[-2]) > int(_to[-2]) & int(_from[-1]) == int(_to[5][-2]):
+		direction = 'Up'
+	elif int(_from[-2]) == int(_to[-2]) & int(_from[-1]) < int(_to[-2]):
+		direction = 'Left'
+	elif int(_from[-2]) == int(_to[-2]) & int(_from[-1]) > int(_to[-2]):
+		direction = 'Right'
+	else:
+		direction = 'Down'
+	return direction
+
+visited = []
+
+while agent:
+	wumpus_cells = []
+	pit_cells = []
+	while not gold:
+		print "start\n"
+		safe_cells = []
+		# get current percepts
+		this_cell = updatewumpus.take_action(this_world, "Up")
+		# if we are dead
+		visited.append(this_cell[5])
+		if this_cell[7] == 'dead':
+			agent = 0
+			break
+		# temporarily use a list to keep visited cells
+		# bind current percepts to current cell
+		#######################################
+		# check current percepts for anomaly:
+		if this_cell[2] == 'glitter':
+			# if gold: pick up gold and set gold to true
+			this_cell = updatewumpus.take_action(this_world, "PickUp")
+			gold = 1
+			break
+		else:
+            condition = flag(this_cell)
+		    # if both wumpus and pit nearby: there is only one safe cell near us besides the one we came from
+		    # get list of nearby cells
+            nearby_cells = updatewumpus.look_ahead(this_world)
+            print nearby_cells
+		    # flag nearby cells as dangerous/safe if it's not the last visited cell
+            for cell in nearby_cells:
+			    if cell != visited[-1]:
+				    if condition[0] == 1:
+					    wumpus_cells.append(cell)
+				    if condition[1] == 1:
+					    pit_cells.append(cell)
+				    if condition[0] == 0 & condition[1] == 0:
+					    safe_cells.append(cell)
+            if len(safe_cells) == 0:
+			    print "STUCK ASF!"
+			    #low2hi_risk(wumpus_cells,pit_cells)
+            else:
+			    for cell in safe_cells:
+				    this_cell = updatewumpus.take_action(this_world, cell2cell(this_cell[5],cell))
+				    this_cell = updatewumpus.take_action(this_world, "Step")
+				    break
+		break
+	# if gold:
+	# 	route = visited.reverse()
+	# 	this_cell = updatewumpus.take_action(this_world, "Up")
+	# 	for cell in route:
+	# 		this_cell = updatewumpus.take_action(this_world, cell2cell(this_cell[5],cell))
+	# 		this_cell = updatewumpus.take_action(this_world, "Step")
+	# 	this_cell = updatewumpus.take_action(this_world, "Down")
+	# 	this_cell = updatewumpus.take_action(this_world, "Exit")
+
+			
